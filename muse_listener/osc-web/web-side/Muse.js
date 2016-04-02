@@ -76,7 +76,8 @@ $(function(window, undefined){
             	mellow: function (obj){            		
             	},
             	concentration: function(obj){
-                console.log(obj);            		
+                    console.log("Concentration: ")
+                    console.log(obj);            		
             	}
             },
             muscle: {
