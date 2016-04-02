@@ -1,0 +1,37 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html> <head>
+<title></title>
+</head>
+
+<body>
+<p>Connect your OSC app/device at port 3333 to send messages to this
+page.<br /><br />Configure your OSC app/device to listen at port 3334
+to messages I send from this page.</p>
+
+<hr />
+
+Received from an OSC app/device at : <div id="status"></div>
+
+<hr />
+
+<script src="http://127.0.0.1:8081/socket.io/socket.io.js"></script>
+
+<script>
+
+    Muse.connect({
+      host: 'http://127.0.0.1',
+      port: 5000,
+      socket: {
+        host: '127.0.0.1',
+        ports: {
+          client: 3334,
+          server: 3333
+        }
+      }
+    });
+
+</script>
+
+<button onclick="socket.emit('message', '/foobar');">Send OSC message</button>
+
+</body> </html>
