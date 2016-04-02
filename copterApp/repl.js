@@ -14,5 +14,3 @@ client
     this.stop();
     this.land();
   });
-
-  
