@@ -12,7 +12,7 @@ var io = require('socket.io').listen(3333);
 var express = require('express');
 var http = require('http');
 var path = require('path');
-var randomizer = require('./randomizer');
+//var randomizer = require('./randomizer');
 var app = express();
 
 // all environments
@@ -40,8 +40,8 @@ var server = http.createServer(app).listen(app.get('port'), function(){
 io = require('socket.io').listen(server, { log: false });
 io.sockets.on('connection', function (socket) {
     var interval = setInterval(function() {
-        var data = getConcentrationData(); //randomizer.getRandomData();
-        socket.emit('dataSet', data); // concentration 
+        //var data = getConcentrationData(); //randomizer.getRandomData();
+        socket.emit('concentration', concentration); // concentration 
         socket.emit('movingMessage', moving);
         socket.emit('turningMessage', turning);
     }, 1);
@@ -49,8 +49,8 @@ io.sockets.on('connection', function (socket) {
         //Update the interval that is coming from the client
         clearInterval(interval);
         interval = setInterval(function() {
-            var data = getConcentrationData(); //randomizer.getRandomData();
-            socket.emit('dataSet', data);
+            //var data = getConcentrationData(); //randomizer.getRandomData();
+            socket.emit('concentration', concentration);
             socket.emit('movingMessage', moving);
             socket.emit('turningMessage', turning);
         }, intervalData);
@@ -61,16 +61,14 @@ io.sockets.on('connection', function (socket) {
 var data = [];
 var totalPoints = 300;
 function getConcentrationData() {
-    if (data.length > 0) {
-        data = data.slice(1);
-    }
+
 
     // Zip the generated y values with the x values
     var res = [];
     for (var i = 0; i < data.length; ++i) {
         res.push([i, data[i]])
     }
-
+    return res; 
 }
 /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -83,7 +81,6 @@ var client = arDrone.createClient();
 client.config('control:altitude_max', 3000);
 
 var inFlight = false; // whether or not the drone is in flight 
-var clenchTime = 0; // is this used?
 
 /* make the drone take off */
 function handleTakeoff() {
@@ -102,11 +99,31 @@ function kill() {
   inFlight = false;
 }
 
+var jawCount = 0;
+
+/* do a barrel roll */
+function flipy() {
+client
+  .after(5000, function() {
+    //this.clockwise(0.5);
+  })
+  .after(3000, function() {
+    console.log("FLIPPY");
+    this.animate('flipLeft', 15);
+  })
+  .after(1000, function() {
+    // this.stop();
+    // this.land();
+  });
+}
+
 var pitchNormal = undefined;
 var rollNormal = undefined;
+
+// data to be passed to the gui port
 var moving = "not moving";
 var turning = "not turning";
-
+var concentration = 0;
 /* 
  * This takes a value and compares it the the normal for head tilt left or right
  * tile left => rotate counterclockwise 
@@ -171,79 +188,14 @@ function handleMove(value) {
 
 /* muse hanndler */
 var Muse = {
-    eeg : {
-      channels: function(obj){
-      },
-      quantization: function(obj){
-      },
-      dropped: function(obj){
-      }
-    },
-    relative : {
-      alpha: function(obj) {
-        Muse.relative.brainwave('alpha', obj);
-      },
-      beta: function(obj) {
-        Muse.relative.brainwave('beta', obj);
-      },
-      delta: function(obj) {
-        Muse.relative.brainwave('delta', obj);
-      },
-      gamma: function(obj) {
-        Muse.relative.brainwave('gamma', obj);
-      },
-      theta: function(obj) {
-        Muse.relative.brainwave('theta', obj);
-      },
-          'brainwave' : function( band, obj) {
-          }
-      },
-      absolute: {
-        low_freq: function(obj){
-        },
-        alpha: function(obj) {
-          Muse.absolute.brainwave('alpha', obj);
-        },
-        beta: function(obj) {
-          Muse.absolute.brainwave('beta', obj);
-        },
-        delta: function(obj) {
-          Muse.absolute.brainwave('delta', obj);
-        },
-        gamma: function(obj) {
-          Muse.absolute.brainwave('gamma', obj);
-        },
-        theta: function(obj) {
-          Muse.absolute.brainwave('theta', obj);
-        },
-        brainwave : function( band, obj) {              
-        }
-      },
-      session: {
-        alpha: function(obj){
-          Muse.session.brainwave('alpha', obj);
-        },
-        beta: function(obj){
-          Muse.session.brainwave('beta', obj);
-        },
-        delta: function(obj){
-          Muse.session.brainwave('delta', obj);
-        },
-        gamma: function(obj){
-          Muse.session.brainwave('gamma', obj);
-        },
-        theta: function(obj){
-          Muse.session.brainwave('theta', obj);
-        },
-        brainwave: function(band, obj){
-        }
-      },
       experimental: {
         mellow: function (obj){  
               //console.log(obj);             
         },
         concentration: function(obj){
-            data.push(obj[1]); // push concentration value into array for visualization     
+
+            concentration = obj[1];
+            //data.push(obj[1]); // push concentration value into array for visualization     
 
             console.log("Concentration : " + obj[1]);
             //console.log(obj[1]);
@@ -260,31 +212,21 @@ var Muse = {
               //console.log(obj);
         },
         'jaw' : function( obj ){   
-              // //console.log(obj);
-              // if(obj[1] == 1) {
-              //   clenchTime++;
-              //   if(clenchTime > 15) {
-              //     kill();
-              //   }
-              // } else {
-              //   clenchTime = 0;
-              // }
+              console.log(obj);
+              if(jawCount >= 8 && inFlight) {
+                flipy();
+                jawCount = 0;
+              } else if(obj[1] == 1 && inFlight) {
+                jawCount++;
+              } else {
+                jawCount = 0;
+              }
         },
         'takenoff' : function( obj ){
           if(obj[1] == 0) {
             console.log("forehead: " + obj);
             kill();
           }
-        }
-      },
-      raw: {
-        fft0: function ( obj ){
-        },
-        fft1: function ( obj ){
-        },
-        fft2: function ( obj ){
-        },
-        fft3: function ( obj ){
         }
       },
       accelerate : function( obj ) {

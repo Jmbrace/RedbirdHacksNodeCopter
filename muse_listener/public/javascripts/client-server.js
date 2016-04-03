@@ -19,48 +19,17 @@ var startClientServer = function() {
     var serverUpdates = 1;
     var clientUpdates = 30;
 
-    /**
-     * Repaint graph function.  This repaints the graph
-     * at a timed interval
-     */
-    function repaintGraph(id) {
-        $("#buffer").text(Math.floor(buffer.length / maxBufferSize * 100));
-        if (!repaintGraph.init && buffer.length > 0) {
-            repaintGraph.init = true;
+    var greenSerie = new TimeSeries();
+    var chart = new SmoothieChart();
 
-            repaintGraph.plot = $.plot(id, [ buffer.shift() ], {
-                series: {
-                    shadowSize: 0	// Drawing is faster without shadows
-                },
-                yaxis: {
-                    min: 0,
-                    max: 100
-                },
-                xaxis: {
-                    show: false
-                }
-            });
-        } else if (!rebuffer && buffer.length > 0) {
-            //If we don't have data, then we have to re-buffer
-            //so there's nothing new to draw.
-            repaintGraph.plot.setData([buffer.shift()]);
-            repaintGraph.plot.draw();
-        }
-    }
-
-    /*
-     * Receiving data from the server
-     */
-    socket.on('dataSet', function (data) {
-        if(buffer.length == 0) {
-            rebuffer = true;
-        } else if(buffer.length > minBufferSize){
-            rebuffer = false;
-        }
-        if(buffer.length <= maxBufferSize) {
-            buffer.push(data);
-        }
+    chart.addTimeSeries(greenSerie, { 
+      strokeStyle: 'rgba(0, 255, 0, 1)', 
+      fillStyle: 'rgba(0, 255, 0, 0.2)', 
+      lineWidth: 4 
     });
+
+    chart.streamTo(document.getElementById("chart"), 500);
+
 
     socket.on('movingMessage', function (data) {
         $("#movingValue").text(data);
@@ -69,6 +38,12 @@ var startClientServer = function() {
     socket.on('turningMessage', function (data) {
         $("#turningValue").text(data);
     });
+
+    socket.on('concentration', function (data) {
+        greenSerie.append(new Date().getTime(), data);
+    });
+    
+
 
     //Add text to the controls
     $("#updateInterval").val(clientUpdates);
@@ -80,7 +55,7 @@ var startClientServer = function() {
     //it within the socket call.  Let that "buffer" the data
     //instead.
     clientInterval = setInterval(function () {
-        repaintGraph("#placeholder");
+        //repaintGraph("#placeholder");
     },clientUpdates);
 
     /*
@@ -99,7 +74,7 @@ var startClientServer = function() {
                 clearInterval(clientInterval);
             }
             clientInterval = setInterval(function () {
-                repaintGraph("#placeholder");
+                //repaintGraph("#placeholder");
             },clientUpdates);
         }
     });
