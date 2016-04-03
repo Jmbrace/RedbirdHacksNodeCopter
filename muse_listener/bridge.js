@@ -1,3 +1,5 @@
+//  /Applications/muse/muse-io --osc osc.udp://localhost:3333 --dsp --device Muse
+
 var osc = require('node-osc'),
     io = require('socket.io').listen(3333);
 
@@ -5,6 +7,8 @@ var oscServer, oscClient;
 
 var arDrone = require('ar-drone');
 var client = arDrone.createClient();
+
+client.config('control:altitude_max', 2000);
 
 var inFlight = false;
 
@@ -97,8 +101,10 @@ var Muse = {
           },
           muscle: {
             'blink' : function( obj ){
+                  //console.log(obj);
             },
-            'jaw' : function( obj ){                
+            'jaw' : function( obj ){   
+                  console.log(obj);
             }
           },
           raw: {
@@ -198,10 +204,8 @@ var Muse = {
               '/muse/eeg/dropped_samples' : function(obj){
                 Muse.eeg.dropped(obj);
               }
-
-        }
-
-  };
+          }
+};
 
 oscServer = new osc.Server(3333, '127.0.0.1');
 
