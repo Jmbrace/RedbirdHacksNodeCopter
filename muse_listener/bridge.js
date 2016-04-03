@@ -13,6 +13,7 @@ client.config('control:altitude_max', 2000);
 var inFlight = false;
 var clenchTime = 0;
 
+/* make the drone take off */
 function handleTakeoff() {
   if(!inFlight) {
     console.log("take off");
@@ -21,11 +22,60 @@ function handleTakeoff() {
   }
 }
 
+/* Kill the drone */
 function kill() {
   client.stop();
   client.land();
 }
 
+var pitchNormal = undefined;
+var rollNormal = undefined;
+
+/* 
+ * This takes a value and compares it the the normal for head tilt left or right
+ * tile left => rotate counterclockwise 
+ * tilt right => 
+ */
+function handleTurn(value) {
+  if (rollNormal == undefined) {
+    rollNormal = value;   
+  }
+  else {
+    val difference = (value > rollNormal);
+    val amount = Math.min(Math.abs(value - rollNormal) / 700, 1); //valuedifference to a value between 0 - 1,
+
+    if (difference) {
+      console.log("clockwise rotation: " + amount);// client.clockwise(amount);
+    } 
+    else {
+      console.log("counter-clockwise rotation: " + amount);// client.counterClockwise(amount);
+    }
+  }
+}
+
+/* 
+ * This takes a value and compares it the the normal for head up or down
+ * down => move forwards 
+ * up => move backwards
+ */
+function handleMove(value) {
+  if (pitchNormal == null) {
+    pitchNormal = value;    
+  }
+  else {
+    val difference = (pitchNormal - value);
+    val amount = Math.min(Math.abs(value - rollNormal) / 800, 1); 
+
+    if (difference > 0 ) {
+      console.log("move forwards: " + amount);//client.front(amount);
+    }
+    else {
+      console.log("move backwards: " + amount);//client.back(amount);
+    }
+  }
+}
+
+/* muse hanndler */
 var Muse = {
     eeg : {
       channels: function(obj){
@@ -135,7 +185,8 @@ var Muse = {
         fft3: function ( obj ){
         }
       },
-      accelerate : function( obj ){                 
+      accelerate : function( obj ){   
+          console.log(obj);
       },
       _handle: {
           '/muse/elements/alpha_relative' : function(obj){
