@@ -11,6 +11,7 @@ var client = arDrone.createClient();
 client.config('control:altitude_max', 2000);
 
 var inFlight = false;
+var clenchTime = 0;
 
 function handleTakeoff() {
   if(!inFlight) {
@@ -18,6 +19,11 @@ function handleTakeoff() {
     client.takeoff();
     inFlight = true;
   }
+}
+
+function kill() {
+  client.stop();
+  client.land();
 }
 
 var Muse = {
@@ -89,13 +95,17 @@ var Muse = {
         }
       },
       experimental: {
-        mellow: function (obj){               
+        mellow: function (obj){  
+              //console.log(obj);             
         },
         concentration: function(obj){
-              //console.log("Concentration: ")
-              //console.log(obj)
-              if(obj[1] > 0.5) {
+              console.log("Concentration : ");
+              console.log(obj[1]);
+              if(obj[1] > 0.7) {
                 handleTakeoff();
+              }
+              if(inFlight && obj[1]<0.35){
+                kill();
               }
         }
       },
@@ -104,7 +114,15 @@ var Muse = {
               //console.log(obj);
         },
         'jaw' : function( obj ){   
-              console.log(obj);
+              //console.log(obj);
+              if(obj[1] == 1) {
+                clenchTime++;
+                if(clenchTime > 15) {
+                  kill();
+                }
+              } else {
+                clenchTime = 0;
+              }
         }
       },
       raw: {
