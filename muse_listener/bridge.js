@@ -1,10 +1,81 @@
 //  /Applications/muse/muse-io --osc osc.udp://localhost:3333 --dsp --device Muse
 
-var osc = require('node-osc'),
-    io = require('socket.io').listen(3333);
+var osc = require('node-osc');
+var io = require('socket.io').listen(3333);
+//var gui = require('socket.io').listen(5000);
+
+///////////////////////////////////////////////////////////////////////////////////
+//GUI stuff
+/**
+ * Module dependencies.
+ */
+var express = require('express');
+var http = require('http');
+var path = require('path');
+var randomizer = require('./randomizer');
+var app = express();
+
+// all environments
+app.set('port', process.env.PORT || 5000);
+app.use(express.favicon());
+app.use(express.logger('dev'));
+app.set('view engine', 'ejs');
+app.use(express.json());
+app.use(express.urlencoded());
+app.use(express.methodOverride());
+app.use(app.router);
+app.use(express.static(path.join(__dirname, 'public')));
+
+// development only
+if ('development' == app.get('env')) {
+  app.use(express.errorHandler());
+}
+
+//create the server
+var server = http.createServer(app).listen(app.get('port'), function(){
+  console.log('Express server listening on port ' + app.get('port'));
+});
+
+//Socket IO specifics
+io = require('socket.io').listen(server, { log: false });
+io.sockets.on('connection', function (socket) {
+    var interval = setInterval(function() {
+        var data = getConcentrationData(); //randomizer.getRandomData();
+        socket.emit('dataSet', data); // concentration 
+        socket.emit('movingMessage', moving);
+        socket.emit('turningMessage', turning);
+    }, 1);
+    socket.on('updateInterval', function (intervalData) {
+        //Update the interval that is coming from the client
+        clearInterval(interval);
+        interval = setInterval(function() {
+            var data = getConcentrationData(); //randomizer.getRandomData();
+            socket.emit('dataSet', data);
+            socket.emit('movingMessage', moving);
+            socket.emit('turningMessage', turning);
+        }, intervalData);
+    });
+});
+
+// get the concentration data
+var data = [];
+var totalPoints = 300;
+function getConcentrationData() {
+    if (data.length > 0) {
+        data = data.slice(1);
+    }
+
+    // Zip the generated y values with the x values
+    var res = [];
+    for (var i = 0; i < data.length; ++i) {
+        res.push([i, data[i]])
+    }
+
+}
+/////////////////////////////////////////////////////////////////////////////////////////////
+
 
 var oscServer, oscClient;
-
 
 /* Configure and make connection with drone (client) */
 var arDrone = require('ar-drone');
@@ -33,6 +104,8 @@ function kill() {
 
 var pitchNormal = undefined;
 var rollNormal = undefined;
+var moving = "not moving";
+var turning = "not turning";
 
 /* 
  * This takes a value and compares it the the normal for head tilt left or right
@@ -52,11 +125,16 @@ function handleTurn(value) {
       if (difference) {
         console.log("clockwise rotation: " + (amount));// client.clockwise(amount);
         client.clockwise(amount);
+        turning = "turning right";
       } 
       else {
         console.log("counter-clockwise rotation: " + (amount));// client.counterClockwise(amount);
         client.counterClockwise(amount);
+        turning = "turning left";
       }
+    }
+    else {
+        turning = "not turning";
     }
   }
 }
@@ -76,12 +154,17 @@ function handleMove(value) {
 
     if (amount > 0.3 && (!difference)) {
         console.log("move forwards: " + (0.1));//client.front(amount);
-        client.front(0.1);      
+        client.front(0.1);  
+        moving = "moving forwards";    
     }
-    if (amount > 0.125 && difference)
+    else if (amount > 0.125 && difference)
     {
         console.log("move backwards: " + (0.1));//client.back(amount);
         client.back(0.1);
+        moving = "moving backwards";
+    }
+    else {
+        moving = "not moving";
     }
   }
 }
@@ -160,14 +243,16 @@ var Muse = {
               //console.log(obj);             
         },
         concentration: function(obj){
-              console.log("Concentration : " + obj[1]);
-              //console.log(obj[1]);
-              if(obj[1] > 0.6) {
+            data.push(obj[1]); // push concentration value into array for visualization     
+
+            console.log("Concentration : " + obj[1]);
+            //console.log(obj[1]);
+            if(obj[1] > 0.6) {
                 handleTakeoff();
-              }
-              if(inFlight && (obj[1]<0.35)){
+            }
+            if(inFlight && (obj[1]<0.35)){
                 kill();
-              }
+            }
         }
       },
       muscle: {
@@ -211,54 +296,6 @@ var Muse = {
           '/muse/elements/touching_forehead' : function(obj){
             Muse.muscle.takenoff(obj);
           },
-          '/muse/elements/alpha_relative' : function(obj){
-              Muse.relative.alpha(obj);
-          },
-          '/muse/elements/beta_relative' : function(obj){
-              Muse.relative.beta(obj);
-          },
-          '/muse/elements/delta_relative' : function(obj){
-              Muse.relative.delta(obj);
-          },
-          '/muse/elements/gamma_relative' : function(obj){
-              Muse.relative.gamma(obj);
-          },
-          '/muse/elements/theta_relative' : function(obj){
-              Muse.relative.theta(obj);
-          },
-          '/muse/elements/low_freqs_absolute' : function(obj){
-            Muse.absolute.low_freq(obj);
-          },
-          '/muse/elements/alpha_absolute' : function(obj){
-              Muse.absolute.alpha(obj);
-          },
-          '/muse/elements/beta_absolute' : function(obj){
-              Muse.absolute.beta(obj);
-          },
-          '/muse/elements/delta_absolute' : function(obj){
-              Muse.absolute.delta(obj);
-          },
-          '/muse/elements/gamma_absolute' : function(obj){
-              Muse.absolute.gamma(obj);
-          },
-          '/muse/elements/theta_absolute' : function(obj){
-              Muse.absolute.theta(obj);
-          },
-          '/muse/elements/delta_session_score' : function(obj){
-            Muse.session.delta(obj);
-          },
-          '/muse/elements/theta_session_score' : function(obj){
-            Muse.session.theta(obj);
-          },
-          '/muse/elements/alpha_session_score' : function(obj){
-            Muse.session.alpha(obj);
-          },
-          '/muse/elements/beta_session_score' : function(obj){
-            Muse.session.beta(obj);
-          },
-          '/muse/elements/gamma_session_score' : function(obj){
-            Muse.session.gamma(obj);
-          },
           '/muse/elements/blink' : function(obj){
             Muse.muscle.blink(obj);
           },
@@ -268,32 +305,8 @@ var Muse = {
           '/muse/acc' : function(obj){
             Muse.accelerate(obj);
           },
-          '/muse/elements/experimental/mellow' : function(obj){
-            Muse.experimental.mellow(obj);
-          },
           '/muse/elements/experimental/concentration' : function(obj){
             Muse.experimental.concentration(obj);
-          },
-          '/muse/elements/raw_fft0' : function(obj){
-            Muse.raw.fft0(obj);
-          },
-          '/muse/elements/raw_fft1' : function(obj){
-            Muse.raw.fft1(obj);
-          },
-          '/muse/elements/raw_fft2' : function(obj){
-            Muse.raw.fft2(obj);
-          },
-          '/muse/elements/raw_fft3' : function(obj){
-            Muse.raw.fft3(obj);
-          },
-          '/muse/eeg' : function(obj){
-            Muse.eeg.channels(obj);
-          },
-          '/muse/eeg/quantization' : function(obj){
-            Muse.eeg.quantization(obj);
-          },
-          '/muse/eeg/dropped_samples' : function(obj){
-            Muse.eeg.dropped(obj);
           }
       }
 };

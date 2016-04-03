@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Flot Examples: Real-time updates</title>
+    <!-- CSS files -->
+    <link href="stylesheets/pure-min.css" rel="stylesheet" type="text/css">
+    <link href="stylesheets/base.css" rel="stylesheet" type="text/css">
+    <link href="stylesheets/chart-modules.css" rel="stylesheet" type="text/css">
+
+    <!--[if lte IE 8]><script type="text/javascript" src="javascripts/excanvas.min.js"></script><![endif]-->
+    <script type="text/javascript" src="javascripts/jquery.min.js"></script>
+    <script type="text/javascript" src="javascripts/jquery.flot.min.js"></script>
+    <script type="text/javascript" src="javascripts/socket.io.js"></script>
+    <script type="text/javascript" src="javascripts/client-server.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            startClientServer();
+        });
+    </script>
+</head>
+<body>
+
+<div id="header">
+    <h1>Muse EEG Values</h1>
+</div>
+
+<div id="content">
+    <h1>Concentration</h1>
+    <div class="demo-container">
+        <div id="placeholder" class="demo-placeholder"></div>
+    </div>
+    <h2>
+        <div>
+            Turning: <span id="turningValue">not</span> <br /> Moving: <span id="movingValue">not</span>
+        </div>
+    </h2>
+    <div>
+        Current Buffer size: <span id="buffer">0</span>%
+    </div>
+</div>
+</body>
+</html>
+
+<!-- 
+    <p>
+        The throttle controls limit how fast the server pushes random data and how fast the browser updates its display.
+        If you see the buffer always decreasing to zero, increase the browser throttle to slow
+        the browser's consumption of data.  Otherwise decrease the browser throttle to speed up the chart or increase the
+        server throttle to slow the server down.
+    </p> -->
+
+    <!-- <div class="pure-g">
+        <form class="pure-form pure-u-1-3" onsubmit="return false" action="?">
+            <div class="pure-control-group">
+                <fieldset>
+                    <legend></legend>
+                    <label for="serverInterval">Server throttle (milliseconds)</label>
+                    <input id="serverInterval" type="text" onclick="return false">
+                    <button type="submit" class="pure-button" id="serverThrottleButton" onclick="return false">Submit
+                    </button>
+                </fieldset>
+            </div>
+        </form>
+        <form class="pure-form pure-u-1-3" onsubmit="return false" action="?">
+            <div class="pure-control-group">
+                <fieldset>
+                    <legend></legend>
+                    <label for="updateInterval">Browser throttle (milliseconds)</label>
+                    <input id="updateInterval" type="text" onclick="return false">
+                    <button type="submit" class="pure-button" id="clientThrottleButton" onclick="return false">Submit
+                    </button>
+                </fieldset>
+            </div>
+        </form>
+    </div> -->
