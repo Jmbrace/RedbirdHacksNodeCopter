@@ -1,7 +1,7 @@
 /**
  * Starts the client and server pushing functionality
  */
-var startClientServer = function() {
+ var startClientServer = function() {
 
     //Get the URL to hand into the connect call
     var http = location.protocol;
@@ -11,7 +11,6 @@ var startClientServer = function() {
     //Socket IO communications
     var socket = io.connect(host);
 
-    var buffer = [];
     var minBufferSize = 50;
     var maxBufferSize = 300;
     var clientInterval = null;
@@ -22,29 +21,29 @@ var startClientServer = function() {
     var greenSerie = new TimeSeries();
     var chart = new SmoothieChart();
 
+    // create graph and set up conection to the canvas
     chart.addTimeSeries(greenSerie, { 
       strokeStyle: 'rgba(0, 255, 0, 1)', 
       fillStyle: 'rgba(0, 255, 0, 0.2)', 
       lineWidth: 4 
-    });
-
+  });
     chart.streamTo(document.getElementById("chart"), 500);
 
-
+    // intercept moving status from bridge.js
     socket.on('movingMessage', function (data) {
         $("#movingValue").text(data);
     });
     
+    // intercept turning status from bridge.js
     socket.on('turningMessage', function (data) {
         $("#turningValue").text(data);
     });
 
+    // intercept concentration data from bridge.js and add it to the graph stream 
     socket.on('concentration', function (data) {
         greenSerie.append(new Date().getTime(), data);
     });
     
-
-
     //Add text to the controls
     $("#updateInterval").val(clientUpdates);
     $("#serverInterval").val(serverUpdates);
@@ -61,7 +60,7 @@ var startClientServer = function() {
     /*
      * The browser throttle button was clicked
      */
-    $("#clientThrottleButton").click(function(){
+     $("#clientThrottleButton").click(function(){
         var v = $("#updateInterval").val();
         if (v && !isNaN(+v)) {
             clientUpdates = +v;
@@ -82,7 +81,7 @@ var startClientServer = function() {
     /*
      * The server throttle button was clicked
      */
-    $("#serverThrottleButton").click(function(){
+     $("#serverThrottleButton").click(function(){
         var v =  $("#serverInterval").val();
         if (v && !isNaN(+v)) {
             serverUpdates = +v;
@@ -96,4 +95,4 @@ var startClientServer = function() {
             socket.emit('updateInterval', serverUpdates);
         }
     });
-};
+ };
