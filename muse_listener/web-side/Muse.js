@@ -77,7 +77,8 @@ $(function(window, undefined){
             	},
             	concentration: function(obj){
                     console.log("Concentration: ")
-                    console.log(obj);            		
+                    console.log(obj)
+                    //            		
             	}
             },
             muscle: {
@@ -116,6 +117,7 @@ $(function(window, undefined){
 			   socket.on('connect', function() {
 			        // sends to socket.io server the host/port of oscServer
 			        // and oscClient
+                    console.log('connecting');
 			        socket.emit('config',
 			            {
 			                server: {
